@@ -124,6 +124,14 @@ class MusicDecryptorGUI:
         
         row += 1
 
+        # 进度条
+        ttk.Label(main_frame, text="进度:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ttk.Progressbar(main_frame, variable=self.progress_var, maximum=100)
+        self.progress_bar.grid(row=row, column=1, sticky=(tk.W, tk.E), pady=5)
+        
+        row += 1
+
         ttk.Label(main_frame, text="日志:").grid(row=row, column=0, sticky=tk.W, pady=5)
         
         row += 1
@@ -195,6 +203,22 @@ class MusicDecryptorGUI:
             logging.info(f"创建输出文件夹: {output_dir}")
             os.makedirs(output_dir)
 
+        # 计算总文件数
+        total_files = 0
+        for root, dirs, files in os.walk(input_dir):
+            for file in files:
+                file_path = os.path.splitext(file)
+                if file_path[-1] in [".mflac", ".mgg", ".lrc"]:
+                    total_files += 1
+
+        if total_files == 0:
+            logging.error("输入文件夹中没有找到需要处理的文件")
+            return
+
+        # 初始化进度
+        processed_files = 0
+        self.progress_var.set(0)
+
         for root, dirs, files in os.walk(input_dir):
             for file in files:
                 file_path = os.path.splitext(file)
@@ -211,10 +235,16 @@ class MusicDecryptorGUI:
                         mp3_file_path = os.path.splitext(output_file_path)[0] + ".mp3"
                         if os.path.exists(mp3_file_path):
                             logging.info(f"MP3文件 {mp3_file_path} 已存在，跳过...")
+                            processed_files += 1
+                            progress = (processed_files / total_files) * 100
+                            self.root.after(0, lambda p=progress: self.progress_var.set(p))
                             continue
                     else:
                         if os.path.exists(output_file_path):
                             logging.info(f"文件 {output_file_path} 已存在，跳过...")
+                            processed_files += 1
+                            progress = (processed_files / total_files) * 100
+                            self.root.after(0, lambda p=progress: self.progress_var.set(p))
                             continue
 
                     tmp_file_path = hashlib.md5(file.encode()).hexdigest()
@@ -240,6 +270,10 @@ class MusicDecryptorGUI:
                                 os.remove(output_file_path)
                         else:
                             logging.info(f"MP3文件 {mp3_file_path} 已存在，跳过...")
+                    
+                    processed_files += 1
+                    progress = (processed_files / total_files) * 100
+                    self.root.after(0, lambda p=progress: self.progress_var.set(p))
                 elif file_path[-1] == ".lrc":
                     # 处理lrc歌词文件
                     lrc_file_path = os.path.join(root, file)
@@ -250,13 +284,19 @@ class MusicDecryptorGUI:
                         logging.info(f"复制歌词文件: {output_lrc_path}")
                     else:
                         logging.info(f"歌词文件 {output_lrc_path} 已存在，跳过...")
+                    
+                    processed_files += 1
+                    progress = (processed_files / total_files) * 100
+                    self.root.after(0, lambda p=progress: self.progress_var.set(p))
 
         session.detach()
+        self.progress_var.set(100)
         logging.info("所有文件处理完成！")
 
     def start_conversion(self):
         self.start_button.config(state="disabled")
         self.log_text.delete(1.0, tk.END)
+        self.progress_var.set(0)  # 重置进度条
         
         thread = threading.Thread(target=self.run_decrypt)
         thread.daemon = True
