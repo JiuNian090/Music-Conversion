@@ -13,6 +13,22 @@ Supports:
   - .mgg → .ogg (有损音频格式)
  
 ## Usage
+
+### GUI Mode (Recommended)
+For a user-friendly interface, use the GUI:
+
+```bash
+pip install -r requirements.txt
+python gui.py
+```
+
+The GUI includes:
+- Format selection (FLAC/OGG, MP3, or both)
+- MP3 bitrate selection
+- Input/output folder browsers
+- Real-time log display
+
+### Command Line Mode
 1. Launch QQMusic and download the music
 2. run the following command
     ```bash
