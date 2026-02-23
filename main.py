@@ -3,9 +3,25 @@ import os
 import hashlib
 import argparse
 import logging
+import subprocess
 
 
-def run_decrypt(input_dir, output_dir):
+def run_decrypt(input_dir, output_dir, convert_to_mp3=False, mp3_bitrate="320k"):
+    def convert_to_mp3_file(input_file, output_file, bitrate):
+        try:
+            subprocess.run(
+                ["ffmpeg", "-i", input_file, "-b:a", bitrate, "-y", output_file],
+                check=True,
+                capture_output=True,
+                text=True
+            )
+            return True
+        except subprocess.CalledProcessError as e:
+            logging.error(f"FFmpeg conversion failed: {e.stderr}")
+            return False
+        except FileNotFoundError:
+            logging.error("FFmpeg not found. Please install FFmpeg and add it to PATH.")
+            return False
     if not os.path.exists(input_dir):
         logging.error(f"Input directory: {input_dir} does not exist.")
         return
@@ -58,6 +74,16 @@ def run_decrypt(input_dir, output_dir):
                 # rename
                 os.rename(tmp_file_path, output_file_path)
                 logging.info(f"Decrypt success: {output_file_path}")
+                
+                # Convert to MP3 if requested
+                if convert_to_mp3:
+                    mp3_file_path = os.path.splitext(output_file_path)[0] + ".mp3"
+                    if not os.path.exists(mp3_file_path):
+                        logging.info(f"Converting to MP3: {mp3_file_path}")
+                        if convert_to_mp3_file(output_file_path, mp3_file_path, mp3_bitrate):
+                            logging.info(f"MP3 conversion success: {mp3_file_path}")
+                    else:
+                        logging.info(f"MP3 file {mp3_file_path} exists, skipping...")
 
     session.detach()
 
@@ -67,5 +93,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", type=str, required=True, help="Please input input directory")
     parser.add_argument("-o", "--output", type=str, required=True, help="Please input output directory")
+    parser.add_argument("--mp3", action="store_true", help="Convert output files to MP3 format (requires FFmpeg)")
+    parser.add_argument("--bitrate", type=str, default="320k", help="MP3 bitrate (e.g., 128k, 192k, 256k, 320k). Default: 320k")
     args = parser.parse_args()
-    run_decrypt(args.input, args.output)
+    run_decrypt(args.input, args.output, args.mp3, args.bitrate)
