@@ -3,9 +3,10 @@ import os
 import hashlib
 import subprocess
 import tkinter as tk
-from tkinter import ttk, filedialog, scrolledtext
+from tkinter import ttk, filedialog, scrolledtext, messagebox
 import threading
 import logging
+import sys
 
 
 class TextHandler(logging.Handler):
@@ -20,11 +21,46 @@ class TextHandler(logging.Handler):
 
 
 class MusicDecryptorGUI:
+    def check_dependencies(self):
+        missing_deps = []
+        
+        # 检查frida是否安装
+        try:
+            import frida
+        except ImportError:
+            missing_deps.append("frida")
+        
+        # 检查ffmpeg是否在PATH中
+        try:
+            subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            missing_deps.append("ffmpeg")
+        
+        if missing_deps:
+            message = f"缺少以下依赖：{', '.join(missing_deps)}\n\n是否安装这些依赖？"
+            if messagebox.askyesno("缺少依赖", message):
+                self.install_dependencies(missing_deps)
+            else:
+                messagebox.showinfo("提示", "依赖未安装，程序可能无法正常运行。")
+
+    def install_dependencies(self, missing_deps):
+        for dep in missing_deps:
+            if dep == "frida":
+                try:
+                    subprocess.run([sys.executable, "-m", "pip", "install", "frida==16.7.10"], check=True, capture_output=True, text=True)
+                    logging.info("frida安装成功")
+                except subprocess.CalledProcessError as e:
+                    logging.error(f"frida安装失败: {e.stderr}")
+                    messagebox.showerror("错误", f"frida安装失败: {e.stderr}")
+            elif dep == "ffmpeg":
+                messagebox.showinfo("安装ffmpeg", "请从官网下载ffmpeg并添加到系统PATH环境变量中:\nhttps://ffmpeg.org/download.html")
+
     def __init__(self, root):
         self.root = root
         self.root.title("Music Conversion")
         self.root.geometry("600x500")
 
+        self.check_dependencies()
         self.setup_ui()
         self.setup_logging()
 
@@ -204,6 +240,16 @@ class MusicDecryptorGUI:
                                 os.remove(output_file_path)
                         else:
                             logging.info(f"MP3文件 {mp3_file_path} 已存在，跳过...")
+                elif file_path[-1] == ".lrc":
+                    # 处理lrc歌词文件
+                    lrc_file_path = os.path.join(root, file)
+                    output_lrc_path = os.path.join(output_dir, file)
+                    if not os.path.exists(output_lrc_path):
+                        import shutil
+                        shutil.copy2(lrc_file_path, output_lrc_path)
+                        logging.info(f"复制歌词文件: {output_lrc_path}")
+                    else:
+                        logging.info(f"歌词文件 {output_lrc_path} 已存在，跳过...")
 
         session.detach()
         logging.info("所有文件处理完成！")

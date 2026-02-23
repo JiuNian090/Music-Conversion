@@ -84,6 +84,16 @@ def run_decrypt(input_dir, output_dir, convert_to_mp3=False, mp3_bitrate="320k")
                             logging.info(f"MP3 conversion success: {mp3_file_path}")
                     else:
                         logging.info(f"MP3 file {mp3_file_path} exists, skipping...")
+            elif file_path[-1] == ".lrc":
+                # 处理lrc歌词文件
+                lrc_file_path = os.path.join(root, file)
+                output_lrc_path = os.path.join(output_dir, file)
+                if not os.path.exists(output_lrc_path):
+                    import shutil
+                    shutil.copy2(lrc_file_path, output_lrc_path)
+                    logging.info(f"Copying lyric file: {output_lrc_path}")
+                else:
+                    logging.info(f"Lyric file {output_lrc_path} exists, skipping...")
 
     session.detach()
 
