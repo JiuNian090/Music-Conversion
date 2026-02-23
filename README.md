@@ -1,4 +1,4 @@
-## Music Decryptor
+## Music Conversion
 
 Just batch decrypt the vip songs downloaded by QQMusic.
 You should have vip privilege to download songs.
