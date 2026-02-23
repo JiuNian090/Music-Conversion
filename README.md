@@ -8,7 +8,9 @@ Simplified version of [decrypt-mflac-frida](https://github.com/yllhwa/decrypt-mf
 Supports:
 - Platform: Windows10/11
 - App version: Latest QQMusic (2025.04.12)
-- Format: *.mflac, *.mgg
+- Format Conversion:
+  - .mflac → .flac (无损音频格式)
+  - .mgg → .ogg (有损音频格式)
  
 ## Usage
 1. Launch QQMusic and download the music
